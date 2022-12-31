@@ -19,7 +19,6 @@ if (!isset($_SESSION['user_array'])) {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Registration System</title>
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <!--bootstrap CSS only -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
@@ -79,8 +78,6 @@ if (!isset($_SESSION['user_array'])) {
         $update_user = mysqli_query($dbconnection, "UPDATE users SET name='$name', email='$email', address='$address', password='$new_password' WHERE id=$user_id");
 
         if ($update_user) {
-            // $_SESSION['expired_time'] = time() + (0.01 * 60);
-            // $_SESSION['success_msg'] = '<script>swal("Good job!", "Your Profile Updated Successfully", "success");</script>';  // for sweet alert
             header('location: user-dashboard.php');
         } else {
             die('Error: '. mysqli_error($dbconnection));
