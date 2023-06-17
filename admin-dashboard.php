@@ -41,11 +41,11 @@ if (!isset($_SESSION['user_array'])) {
     if ($auth_user_result) {
         $auth_user_array = mysqli_fetch_array($auth_user_result);
     } else {
-        die("Error: ". mysqli_error($dbconnection));
+        die("Error: " . mysqli_error($dbconnection));
     }
-    
+
     $user_edition_form_status = false;
-   // User Edit
+    // User Edit
     if (isset($_GET['user_id_to_update'])) {
         $user_edition_form_status = true;
         $user_id_to_update = $_GET['user_id_to_update'];
@@ -59,54 +59,84 @@ if (!isset($_SESSION['user_array'])) {
             die('Error: ' . mysqli_error($dbconnection));
         }
     }
+
+    $nameError = $emailError = $addressError = $roleError = $passwordError = '';
     // User Update
     if (isset($_POST['user_update_button'])) {
-        $user_id = $_POST['user_id'];
+        $user_id = intval($_POST['user_id']);
 
         $name = $_POST['name'];
         $email = $_POST['email'];
         $address = $_POST['address'];
         $role = $_POST['role'];
-
-        $result = mysqli_query($dbconnection, "SELECT * FROM users WHERE id=$user_id");
-        $user_array = mysqli_fetch_assoc($result);
-        $old_password = $user_array['password'];
         $input_password = $_POST['password'];
 
-        $new_password = $old_password != $input_password ? md5($input_password) : $input_password;  // ternary operator
-
-        // if ($old_password == $input_password) {
-        //     $new_password = $input_password;
-        // } else {
-        //     $new_password = md5($input_password);
-        // }
-
-        $query = "UPDATE users SET name='$name', email='$email', address='$address', password='$new_password', role='$role' WHERE id=$user_id";
-
-        $result = mysqli_query($dbconnection, $query);
-
-        if ($result) {
-            echo '<script>alert("A user is updated successfully!")</script>';
-            header('location: admin-dashboard.php');
-        } else {
-            die('Error: ' . mysqli_error($dbconnection));
+        $error = false;
+        if ($name == '') {
+            $nameError = 'User name is required';
+            $error = true;
         }
-        
+        if ($email == '') {
+            $emailError = 'Email field is required';
+            $error = true;
+        }
+        if ($address == '') {
+            $addressError = 'Address field is required';
+            $error = true;
+        }
+        if ($role == '') {
+            $roleError = 'Please select one role!';
+            $error = true;
+        }
+        if ($input_password == '') {
+            $passwordError = 'Password field is required!';
+            $error = true;
+        }
+
+        if (!$error) {
+            $result = mysqli_query($dbconnection, "SELECT * FROM users WHERE id=$user_id");
+            $user_array = mysqli_fetch_assoc($result);
+            $old_password = $user_array['password'];
+            $new_password = $old_password != $input_password ? md5($input_password) : $input_password;  // ternary operator
+
+            // if ($old_password == $input_password) {
+            //     $new_password = $input_password;
+            // } else {
+            //     $new_password = md5($input_password);
+            // }
+
+            $query = "UPDATE users SET name='$name', email='$email', address='$address', password='$new_password', role='$role' WHERE id=$user_id";
+
+            $result = mysqli_query($dbconnection, $query);
+            $_SESSION['successMsg'] = 'User updated successfully!'; // start output buffering
+            header('location: admin-dashboard.php');
+            exit();
+        } else {
+            $_SESSION['nameError'] = $nameError;
+            $_SESSION['emailError'] = $emailError;
+            $_SESSION['addressError'] = $addressError;
+            $_SESSION['roleError'] = $roleError;
+            $_SESSION['passwordError'] = $passwordError;
+            header('Location: ' . $_SERVER['HTTP_REFERER']);
+            exit();
+        }
     }
 
     // USER DELETE
     if (isset($_REQUEST['user_id_to_delete'])) {
         $user_id_to_delete = $_REQUEST['user_id_to_delete'];
-        
+
         $result = mysqli_query($dbconnection, "DELETE FROM users WHERE id=$user_id_to_delete");
         if ($result) {
-            echo '<script>alert("A User Deleted Successfully!")</script>';
+            $_SESSION['successMsg'] = 'User deleted successfully!';
             header('location: admin-dashboard.php');
+            exit();
         } else {
-            die("Error: ". mysqli_error($dbconnection));
+            die("Error: " . mysqli_error($dbconnection));
         }
     }
 
+    // FOR CANCEL BUTTON IF YOU DON'T WANT TO UPDATE
     if (isset($_POST['cancel_button'])) {
         $user_edition_form_status = false;
     }
@@ -172,18 +202,50 @@ if (!isset($_SESSION['user_array'])) {
                                                 <div class="form-group">
                                                     <label for="name">Name</label>
                                                     <input type="text" name="name" id="name" class="form-control" value="<?php echo $user['name']; ?>">
+                                                    <div class="text-danger">
+                                                        <?php
+                                                        if (isset($_SESSION['nameError'])) {
+                                                            echo $_SESSION['nameError'];
+                                                            unset($_SESSION['nameError']);
+                                                        }
+                                                        ?>
+                                                    </div>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="email">Email</label>
                                                     <input type="email" name="email" id="email" class="form-control" value="<?php echo $user['email']; ?>">
+                                                    <div class="text-danger">
+                                                        <?php
+                                                        if (isset($_SESSION['emailError'])) {
+                                                            echo $_SESSION['emailError'];
+                                                            unset($_SESSION['emailError']);
+                                                        }
+                                                        ?>
+                                                    </div>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="address">Address</label>
                                                     <textarea name="address" id="address" class="form-control"><?php echo $user['address']; ?></textarea>
+                                                    <div class="text-danger">
+                                                        <?php
+                                                        if (isset($_SESSION['addressError'])) {
+                                                            echo $_SESSION['addressError'];
+                                                            unset($_SESSION['addressError']);
+                                                        }
+                                                        ?>
+                                                    </div>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="password">Password</label>
                                                     <input type="text" name="password" id="password" class="form-control" value="<?php echo $user['password']; ?>">
+                                                    <div class="text-danger">
+                                                        <?php
+                                                        if (isset($_SESSION['passwordError'])) {
+                                                            echo $_SESSION['passwordError'];
+                                                            unset($_SESSION['passwordError']);
+                                                        }
+                                                        ?>
+                                                    </div>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="role">Role</label>
@@ -192,6 +254,14 @@ if (!isset($_SESSION['user_array'])) {
                                                         <option value="admin" <?php if ($user['role'] == 'admin') : ?> selected <?php endif ?>>Admin</option>
                                                         <option value="user" <?php if ($user['role'] == 'user') : ?> selected <?php endif ?>>User</option>
                                                     </select>
+                                                    <div class="text-danger">
+                                                        <?php
+                                                        if (isset($_SESSION['roleError'])) {
+                                                            echo $_SESSION['roleError'];
+                                                            unset($_SESSION['roleError']);
+                                                        }
+                                                        ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="card-footer">
@@ -202,8 +272,23 @@ if (!isset($_SESSION['user_array'])) {
                                     </div>
                                 <?php endif ?>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-8 table-responsive">
                                 <h5>User List</h5>
+
+                                <?php
+                                if (isset($_SESSION['successMsg'])) { ?>
+                                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                        <strong><?php
+                                         echo $_SESSION['successMsg'];
+                                                unset($_SESSION['successMsg']);
+                                        ?></strong>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                <?php
+                                    
+                                }
+                                ?>
+
                                 <table class="table table-bordered table-hover">
                                     <thead>
                                         <tr>
@@ -230,8 +315,8 @@ if (!isset($_SESSION['user_array'])) {
                                                 <td><?php echo $user['address']; ?></td>
                                                 <td><?php echo $user['role']; ?></td>
                                                 <td>
-                                                        <a href="admin-dashboard.php?user_id_to_update=<?php echo $user['id']; ?>" class="btn btn-primary btn-sm">Edit</a>
-                                                        <a href="admin-dashboard.php?user_id_to_delete=<?php echo $user['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
+                                                    <a href="admin-dashboard.php?user_id_to_update=<?php echo $user['id']; ?>" class="btn btn-primary btn-sm">Edit</a>
+                                                    <a href="admin-dashboard.php?user_id_to_delete=<?php echo $user['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete?')">Delete</a>
                                                 </td>
                                             </tr>
 
@@ -253,6 +338,7 @@ if (!isset($_SESSION['user_array'])) {
 <script src="./js/bootstrap.min.js"></script>
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
-    
+
 </script>
+
 </html>
